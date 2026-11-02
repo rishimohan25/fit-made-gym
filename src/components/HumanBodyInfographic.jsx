@@ -18,10 +18,13 @@ export default function HumanBodyInfographic({
   imageUrl = '',
   compact = false,
   showToggle = true,
+  theme = 'dark',
 }) {
   const [activeTab, setActiveTab] = useState('both'); // 'both' | 'anterior' | 'posterior'
   const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [showEnlargedImage, setShowEnlargedImage] = useState(false);
+
+  const isLight = theme === 'light';
 
   // Format data for react-body-highlighter
   const data = useMemo(() => {
@@ -56,7 +59,7 @@ export default function HumanBodyInfographic({
   const hasAnyMuscles = (primaryMuscles && primaryMuscles.length > 0) || (secondaryMuscles && secondaryMuscles.length > 0);
 
   return (
-    <div className={`human-infographic-container ${compact ? 'compact' : ''}`}>
+    <div className={`human-infographic-container ${compact ? 'compact' : ''} ${isLight ? 'theme-light' : ''}`}>
       {title && (
         <div className="infographic-header">
           <div className="infographic-title-row">
@@ -127,7 +130,7 @@ export default function HumanBodyInfographic({
               <Model
                 type="anterior"
                 data={data}
-                bodyColor="#334155"
+                bodyColor={isLight ? '#cbd5e1' : '#334155'}
                 highlightedColors={highlightedColors}
                 style={{ width: compact ? '105px' : '140px', margin: '0 auto' }}
                 onClick={handleMuscleClick}
@@ -143,7 +146,7 @@ export default function HumanBodyInfographic({
               <Model
                 type="posterior"
                 data={data}
-                bodyColor="#334155"
+                bodyColor={isLight ? '#cbd5e1' : '#334155'}
                 highlightedColors={highlightedColors}
                 style={{ width: compact ? '105px' : '140px', margin: '0 auto' }}
                 onClick={handleMuscleClick}
@@ -572,6 +575,118 @@ export default function HumanBodyInfographic({
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        /* Light Theme Overrides */
+        .human-infographic-container.theme-light {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          color: #0f172a;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .human-infographic-container.theme-light.compact {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+        }
+
+        .human-infographic-container.theme-light .infographic-header {
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .human-infographic-container.theme-light .infographic-header h4 {
+          color: #475569;
+        }
+
+        .human-infographic-container.theme-light .exercise-tag {
+          background: #eff6ff;
+          color: #2563eb;
+          border-color: #bfdbfe;
+        }
+
+        .human-infographic-container.theme-light .realistic-action-box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .human-infographic-container.theme-light .zoom-btn {
+          background: #e2e8f0;
+          border: 1px solid #cbd5e1;
+          color: #334155;
+        }
+
+        .human-infographic-container.theme-light .zoom-btn:hover {
+          background: #cbd5e1;
+          color: #0f172a;
+        }
+
+        .human-infographic-container.theme-light .image-frame {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+        }
+
+        .human-infographic-container.theme-light .view-toggle-pills {
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+        }
+
+        .human-infographic-container.theme-light .toggle-pill {
+          color: #64748b;
+        }
+
+        .human-infographic-container.theme-light .toggle-pill:hover {
+          color: #0f172a;
+        }
+
+        .human-infographic-container.theme-light .toggle-pill.active {
+          background: #2563eb;
+          color: #ffffff;
+        }
+
+        .human-infographic-container.theme-light .model-wrapper {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+        }
+
+        .human-infographic-container.theme-light .model-label {
+          color: #64748b;
+        }
+
+        .human-infographic-container.theme-light .muscle-interactive-toast {
+          background: #eef2ff;
+          border: 1px solid #c7d2fe;
+          color: #3730a3;
+        }
+
+        .human-infographic-container.theme-light .muscle-legend-tray {
+          border-top: 1px solid #f1f5f9;
+        }
+
+        .human-infographic-container.theme-light .legend-label {
+          color: #475569;
+        }
+
+        .human-infographic-container.theme-light .muscle-chip.primary {
+          background: #fee2e2;
+          color: #b91c1c;
+          border: 1px solid #fca5a5;
+        }
+
+        .human-infographic-container.theme-light .muscle-chip.secondary {
+          background: #fef3c7;
+          color: #b45309;
+          border: 1px solid #fcd34d;
+        }
+
+        .human-infographic-container.theme-light .lightbox-content {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #0f172a;
+        }
+
+        .human-infographic-container.theme-light .lightbox-header h4 {
+          color: #0f172a;
         }
       `}</style>
     </div>

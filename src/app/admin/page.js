@@ -18,6 +18,24 @@ export default function AdminDashboardPage() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [gymOrigin, setGymOrigin] = useState('');
+  const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('fit_made_gym_theme') || 'dark';
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } catch (e) {}
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('fit_made_gym_theme', nextTheme);
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    } catch (e) {}
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -673,14 +691,24 @@ export default function AdminDashboardPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="login-backdrop">
+      <div className={`login-backdrop ${theme === 'light' ? 'light-mode' : ''}`}>
         <div className="login-card">
-          <div className="login-logo-row">
-            <img src="/images/logo.png" alt="FIT MADE GYM" className="login-logo-img" />
-            <div className="login-title-col">
-              <h2>FIT MADE GYM</h2>
-              <span className="login-motto">STAY FIT. BE ON TOP • ESTD 2017</span>
+          <div className="login-header-row">
+            <div className="login-logo-row">
+              <img src="/images/logo.png" alt="FIT MADE GYM" className="login-logo-img" />
+              <div className="login-title-col">
+                <h2>FIT MADE GYM</h2>
+                <span className="login-motto">STAY FIT. BE ON TOP • ESTD 2017</span>
+              </div>
             </div>
+            <button
+              type="button"
+              className="login-theme-btn"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
           </div>
           <p className="login-subtitle">Trainer sign in to update daily workouts, reps, cardio, and stretches.</p>
 
@@ -746,11 +774,33 @@ export default function AdminDashboardPage() {
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             color: #f8fafc;
           }
+          .login-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+          }
+          .login-theme-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 1rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+          .login-theme-btn:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.15);
+          }
           .login-logo-row {
             display: flex;
             align-items: center;
             gap: 0.85rem;
-            margin-bottom: 0.5rem;
           }
           .login-logo-img {
             width: 52px;
@@ -847,6 +897,43 @@ export default function AdminDashboardPage() {
             font-size: 0.85rem;
             color: #60a5fa;
           }
+
+          /* Light Mode Overrides for Login */
+          .login-backdrop.light-mode {
+            background: radial-gradient(circle at 50% 20%, #f1f5f9 0%, #cbd5e1 100%);
+          }
+          .login-backdrop.light-mode .login-card {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            color: #0f172a;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+          }
+          .login-backdrop.light-mode .login-card h2 {
+            color: #0f172a;
+          }
+          .login-backdrop.light-mode .login-subtitle {
+            color: #64748b;
+          }
+          .login-backdrop.light-mode .form-field label {
+            color: #475569;
+          }
+          .login-backdrop.light-mode .admin-input {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+          }
+          .login-backdrop.light-mode .admin-input:focus {
+            background: #ffffff;
+            border-color: #ef4444;
+          }
+          .login-backdrop.light-mode .default-creds-hint {
+            background: #f1f5f9;
+            color: #475569;
+          }
+          .login-backdrop.light-mode .login-theme-btn {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+          }
         `}</style>
       </div>
     );
@@ -854,7 +941,7 @@ export default function AdminDashboardPage() {
 
   // Authenticated Admin Dashboard
   return (
-    <div className="admin-page-container">
+    <div className={`admin-page-container ${theme === 'light' ? 'light-mode' : ''}`}>
       {/* Admin Top Navigation */}
       <header className="admin-top-nav">
         <div className="nav-brand-group">
@@ -867,6 +954,14 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="nav-actions-group">
+          <button
+            type="button"
+            className="nav-btn theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+          </button>
           <Link href="/" className="nav-btn member-preview-btn">
             👁️ Member View
           </Link>
@@ -1149,6 +1244,7 @@ export default function AdminDashboardPage() {
                       imageUrl={ex.imageUrl}
                       compact={true}
                       showToggle={false}
+                      theme={theme}
                     />
                   </div>
                 </div>
@@ -1420,6 +1516,7 @@ export default function AdminDashboardPage() {
                         imageUrl={standardPreview.imageUrl}
                         compact={true}
                         showToggle={false}
+                        theme={theme}
                       />
                     </div>
 
@@ -1540,6 +1637,7 @@ export default function AdminDashboardPage() {
                     imageUrl={customWorkoutForm.imageUrl}
                     compact={true}
                     showToggle={false}
+                    theme={theme}
                   />
                 </div>
 
@@ -1658,6 +1756,7 @@ export default function AdminDashboardPage() {
                         imageUrl={searchResult.imageUrl}
                         compact={true}
                         showToggle={false}
+                        theme={theme}
                       />
                     </div>
 
@@ -2843,6 +2942,295 @@ export default function AdminDashboardPage() {
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Light Mode Specific Overrides for Admin Dashboard */
+        .admin-page-container.light-mode {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .admin-top-nav {
+          border-bottom-color: #e2e8f0;
+        }
+
+        .admin-page-container.light-mode .nav-title {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .nav-btn {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #334155;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-page-container.light-mode .nav-btn:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .member-preview-btn {
+          background: #eff6ff;
+          border-color: #93c5fd;
+          color: #1d4ed8;
+        }
+
+        .admin-page-container.light-mode .member-preview-btn:hover {
+          background: #dbeafe;
+        }
+
+        .admin-page-container.light-mode .qr-btn {
+          background: #ecfdf5;
+          border-color: #a7f3d0;
+          color: #047857;
+        }
+
+        .admin-page-container.light-mode .qr-btn:hover {
+          background: #d1fae5;
+        }
+
+        .admin-page-container.light-mode .save-action-banner {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .admin-page-container.light-mode .save-sub-text {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .day-tab {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          color: #334155;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .admin-page-container.light-mode .day-tab:hover {
+          background: #f8fafc;
+        }
+
+        .admin-page-container.light-mode .day-tab.active {
+          background: #ef4444;
+          border-color: #ef4444;
+          color: #ffffff;
+          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .admin-page-container.light-mode .clone-routine-bar {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-page-container.light-mode .clone-heading {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .clone-desc {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .clone-day-select {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+
+        .admin-page-container.light-mode .btn-standard {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+
+        .admin-page-container.light-mode .btn-standard:hover:not(:disabled) {
+          background: #e2e8f0;
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .admin-card {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-page-container.light-mode .field-label {
+          color: #475569;
+        }
+
+        .admin-page-container.light-mode .focus-input-large {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .focus-input-large:focus {
+          background: #ffffff;
+          border-color: #ef4444;
+        }
+
+        .admin-page-container.light-mode .card-header-row h3 {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .card-header-hint {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .btn-add-item {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+          color: #0284c7;
+        }
+
+        .admin-page-container.light-mode .btn-add-item:hover {
+          background: #e2e8f0;
+        }
+
+        .admin-page-container.light-mode .edit-item-card {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+        }
+
+        .admin-page-container.light-mode .item-order-pill {
+          background: #e2e8f0;
+          color: #475569;
+        }
+
+        .admin-page-container.light-mode .edit-input-title,
+        .admin-page-container.light-mode .workout-name-input {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .edit-input-reps,
+        .admin-page-container.light-mode .edit-input-duration {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0369a1;
+        }
+
+        .admin-page-container.light-mode .edit-input-notes,
+        .admin-page-container.light-mode .admin-input-sm,
+        .admin-page-container.light-mode .admin-textarea,
+        .admin-page-container.light-mode .admin-select {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .btn-order {
+          background: #e2e8f0;
+          color: #334155;
+        }
+
+        .admin-page-container.light-mode .grid-cell label,
+        .admin-page-container.light-mode .workout-field-row label,
+        .admin-page-container.light-mode .workout-notes-row label {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .gym-qr-dashboard-card {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-page-container.light-mode .qr-dashboard-preview {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+        }
+
+        .admin-page-container.light-mode .qr-url-text {
+          color: #334155;
+        }
+
+        .admin-page-container.light-mode .qr-mini-btn {
+          background: #e2e8f0;
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+
+        .admin-page-container.light-mode .qr-mini-btn:hover {
+          background: #cbd5e1;
+        }
+
+        .admin-page-container.light-mode .add-mode-toggle {
+          background: #f1f5f9;
+        }
+
+        .admin-page-container.light-mode .mode-btn {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .mode-btn.active {
+          background: #ef4444;
+          color: #ffffff;
+        }
+
+        .admin-page-container.light-mode .standard-preview-box,
+        .admin-page-container.light-mode .search-result-card {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+        }
+
+        .admin-page-container.light-mode .preview-meta strong,
+        .admin-page-container.light-mode .result-header h4 {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .preview-notes,
+        .admin-page-container.light-mode .result-notes,
+        .admin-page-container.light-mode .search-instruction {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .search-type-pills {
+          background: #f1f5f9;
+        }
+
+        .admin-page-container.light-mode .search-type-pill {
+          color: #64748b;
+        }
+
+        .admin-page-container.light-mode .search-type-pill.active {
+          background: #2563eb;
+          color: #ffffff;
+        }
+
+        .admin-page-container.light-mode .muscle-tag-chip {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+          color: #475569;
+        }
+
+        .admin-page-container.light-mode .muscle-tag-chip.primary-active {
+          background: #ef4444;
+          color: #ffffff;
+          border-color: #ef4444;
+        }
+
+        .admin-page-container.light-mode .muscle-tag-chip.secondary-active {
+          background: #f59e0b;
+          color: #ffffff;
+          border-color: #f59e0b;
+        }
+
+        .admin-page-container.light-mode .modal-card {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .admin-page-container.light-mode .modal-header h3 {
+          color: #0f172a;
+        }
+
+        .admin-page-container.light-mode .field-group label {
+          color: #475569;
         }
       `}</style>
     </div>

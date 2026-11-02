@@ -8,6 +8,7 @@ export default function MemberWorkoutPage() {
   const [loading, setLoading] = useState(true);
   const [expandedExerciseId, setExpandedExerciseId] = useState(null);
   const [formattedDate, setFormattedDate] = useState('');
+  const [theme, setTheme] = useState('dark');
 
   // Set completion state: { [exerciseId_setIndex]: boolean }
   const [completedSets, setCompletedSets] = useState({});
@@ -18,6 +19,24 @@ export default function MemberWorkoutPage() {
   const [activeTimer, setActiveTimer] = useState(null); // { secondsLeft: number, totalSeconds: number, exerciseName: string }
   const timerIntervalRef = useRef(null);
   const audioContextRef = useRef(null);
+
+  // Sync theme with localStorage
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('fit_made_gym_theme') || 'dark';
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } catch (e) {}
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('fit_made_gym_theme', nextTheme);
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    } catch (e) {}
+  };
 
   // Fetch today's routine on mount
   useEffect(() => {
@@ -117,7 +136,7 @@ export default function MemberWorkoutPage() {
   ).filter((m) => !allDayPrimaryMuscles.includes(m));
 
   return (
-    <main className="mobile-workout-page">
+    <main className={`mobile-workout-page ${theme === 'light' ? 'light-mode' : ''}`}>
       {/* Top Header */}
       <header className="page-header">
         <div className="header-brand-row">
@@ -128,6 +147,15 @@ export default function MemberWorkoutPage() {
               <span className="brand-motto">STAY FIT. BE ON TOP</span>
             </div>
           </div>
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label="Toggle dark/light theme"
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+          </button>
         </div>
 
         {/* Date Display */}
@@ -170,6 +198,7 @@ export default function MemberWorkoutPage() {
                 title="Today's Target Muscle Activation"
                 exerciseName={schedule.target_focus}
                 imageUrl={schedule.workouts?.[0]?.imageUrl || ''}
+                theme={theme}
               />
             </div>
           </section>
@@ -326,6 +355,7 @@ export default function MemberWorkoutPage() {
                           title={`${ex.exercise_name} Muscle Engagement`}
                           imageUrl={ex.imageUrl}
                           compact={true}
+                          theme={theme}
                         />
                       </div>
                     )}
@@ -1060,6 +1090,204 @@ export default function MemberWorkoutPage() {
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
+        }
+
+        .theme-toggle-btn {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: #f8fafc;
+          padding: 0.35rem 0.75rem;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          transition: all 0.15s ease;
+        }
+
+        .theme-toggle-btn:hover {
+          background: rgba(255, 255, 255, 0.15);
+          transform: translateY(-1px);
+        }
+
+        /* Light Mode Specific Overrides */
+        .light-mode .theme-toggle-btn {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .light-mode .theme-toggle-btn:hover {
+          background: #f1f5f9;
+        }
+
+        .light-mode .brand-badge {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .light-mode .brand-name {
+          color: #0f172a;
+        }
+
+        .light-mode .today-date-banner {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .light-mode .date-text {
+          color: #334155;
+        }
+
+        .light-mode .routine-hero-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .light-mode .target-focus-title {
+          color: #0f172a;
+        }
+
+        .light-mode .focus-description {
+          color: #64748b;
+        }
+
+        .light-mode .exercise-count-tag {
+          color: #64748b;
+        }
+
+        .light-mode .rest-timer-bar {
+          background: #ffffff;
+          border-color: #ef4444;
+          box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+        }
+
+        .light-mode .timer-label {
+          color: #0f172a;
+        }
+
+        .light-mode .timer-digits {
+          color: #dc2626;
+        }
+
+        .light-mode .timer-cancel-btn {
+          background: #f1f5f9;
+          color: #0f172a;
+          border: 1px solid #e2e8f0;
+        }
+
+        .light-mode .section-title {
+          color: #0f172a;
+        }
+
+        .light-mode .section-sub {
+          color: #64748b;
+        }
+
+        .light-mode .warmup-card,
+        .light-mode .cardio-card,
+        .light-mode .stretch-card,
+        .light-mode .workout-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .light-mode .warmup-name,
+        .light-mode .cardio-name,
+        .light-mode .stretch-name,
+        .light-mode .workout-exercise-name {
+          color: #0f172a;
+        }
+
+        .light-mode .warmup-reps-badge,
+        .light-mode .cardio-duration-badge,
+        .light-mode .stretch-duration-badge {
+          background: #f1f5f9;
+          color: #0284c7;
+          border-color: #bae6fd;
+        }
+
+        .light-mode .warmup-notes,
+        .light-mode .cardio-notes,
+        .light-mode .stretch-notes {
+          color: #64748b;
+        }
+
+        .light-mode .check-circle-btn {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          color: #64748b;
+        }
+
+        .light-mode .exercise-index-pill {
+          background: #f1f5f9;
+          color: #0f172a;
+          border: 1px solid #e2e8f0;
+        }
+
+        .light-mode .coach-cue-box {
+          background: #fef2f2;
+          border-left: 3px solid #ef4444;
+        }
+
+        .light-mode .coach-cue-box p {
+          color: #7f1d1d;
+        }
+
+        .light-mode .sets-tracker-tray {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+        }
+
+        .light-mode .tracker-label {
+          color: #64748b;
+        }
+
+        .light-mode .set-check-btn {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #334155;
+        }
+
+        .light-mode .set-check-btn.done {
+          background: #059669;
+          border-color: #059669;
+          color: #ffffff;
+        }
+
+        .light-mode .toggle-infographic-btn {
+          border-color: #cbd5e1;
+          color: #475569;
+        }
+
+        .light-mode .toggle-infographic-btn:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+
+        .light-mode .exercise-action-preview-card {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .light-mode .page-footer {
+          border-top-color: #e2e8f0;
+        }
+
+        .light-mode .footer-gym-title {
+          color: #0f172a;
+        }
+
+        .light-mode .footer-gym-note {
+          color: #64748b;
         }
       `}</style>
     </main>

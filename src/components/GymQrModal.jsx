@@ -399,6 +399,33 @@ export default function GymQrModal({ isOpen, onClose }) {
           background: rgba(255, 255, 255, 0.1);
         }
 
+        :global([data-theme="light"]) .qr-modal-card {
+          background: #ffffff;
+          border-color: #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        :global([data-theme="light"]) .qr-modal-header h3 {
+          color: #0f172a;
+        }
+        :global([data-theme="light"]) .qr-config-panel {
+          border-top-color: #e2e8f0;
+        }
+        :global([data-theme="light"]) .gym-text-input {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+        :global([data-theme="light"]) .btn-secondary {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+        :global([data-theme="light"]) .btn-action.outline {
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+
         @media print {
           body * {
             visibility: hidden;
