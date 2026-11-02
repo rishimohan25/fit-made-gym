@@ -40,14 +40,29 @@ export default function AdminDashboardPage() {
   const [isCloning, setIsCloning] = useState(false);
 
   // Add workout form state
-  const [addMode, setAddMode] = useState('standard'); // 'standard' | 'webSearch'
+  const [addMode, setAddMode] = useState('standard'); // 'standard' | 'custom' | 'webSearch'
   const [selectedStandardId, setSelectedStandardId] = useState('');
   const [standardPreview, setStandardPreview] = useState(null);
 
-  // Web search state (Exa only)
+  // Direct custom workout manual form (without searching)
+  const [customWorkoutForm, setCustomWorkoutForm] = useState({
+    name: '',
+    target_sets: 3,
+    target_reps: '10-12 reps',
+    rest_seconds: 60,
+    coach_notes: '',
+    primary_muscles: ['chest'],
+    secondary_muscles: [],
+    imageUrl: '',
+  });
+
+  // Web search state (Exa only) - supports workout, cardio, and stretch
+  const [searchType, setSearchType] = useState('workout'); // 'workout' | 'cardio' | 'stretch'
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
+  const [searchCardioResult, setSearchCardioResult] = useState(null);
+  const [searchStretchResult, setSearchStretchResult] = useState(null);
   const [searchError, setSearchError] = useState('');
 
   // QR Modal
@@ -436,25 +451,33 @@ export default function AdminDashboardPage() {
     showToast(`Added "${newWorkout.exercise_name}" to ${DAY_NAMES[selectedDay - 1]}`);
   };
 
-  // Web search via Exa
+  // Web search via Exa (supports workout, cardio, stretch)
   const handleWebSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     setSearchError('');
     setSearchResult(null);
+    setSearchCardioResult(null);
+    setSearchStretchResult(null);
 
     try {
       const res = await fetch('/api/exercises/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exerciseName: searchQuery.trim() }),
+        body: JSON.stringify({ exerciseName: searchQuery.trim(), type: searchType }),
       });
       const data = await res.json();
       if (data.success) {
-        setSearchResult(data.exercise);
+        if (data.type === 'cardio') {
+          setSearchCardioResult(data.cardio);
+        } else if (data.type === 'stretch') {
+          setSearchStretchResult(data.stretch);
+        } else {
+          setSearchResult(data.exercise);
+        }
       } else {
-        setSearchError(data.error || 'Failed to search exercise');
+        setSearchError(data.error || 'Failed to search');
       }
     } catch (err) {
       setSearchError('Error performing web search');
@@ -510,6 +533,106 @@ export default function AdminDashboardPage() {
     setSearchResult(null);
     setSearchQuery('');
     showToast(`Added custom "${newWorkout.exercise_name}" to ${DAY_NAMES[selectedDay - 1]}`);
+  };
+
+  const handleAddSearchCardioToDay = () => {
+    if (!searchCardioResult) return;
+    const newCardio = {
+      id: `c-${Date.now()}`,
+      name: searchCardioResult.name,
+      duration_minutes: searchCardioResult.duration_minutes || 20,
+      equipment: searchCardioResult.equipment || 'Cardio Station',
+      target_intensity: searchCardioResult.target_intensity || 'Zone 2',
+      coach_notes: searchCardioResult.coach_notes || '',
+    };
+    setDaySchedules((prev) => ({
+      ...prev,
+      [selectedDay]: {
+        ...currentDayData,
+        cardio: [...(currentDayData.cardio || []), newCardio],
+      },
+    }));
+    showToast(`Added cardio "${newCardio.name}" to ${DAY_NAMES[selectedDay - 1]}`);
+    setSearchCardioResult(null);
+    setSearchQuery('');
+  };
+
+  const handleAddSearchStretchToDay = () => {
+    if (!searchStretchResult) return;
+    const newStretch = {
+      id: `s-${Date.now()}`,
+      name: searchStretchResult.name,
+      target_duration: searchStretchResult.target_duration || '60 seconds',
+      muscles: searchStretchResult.muscles || ['hamstring', 'upper-back'],
+      coach_notes: searchStretchResult.coach_notes || '',
+    };
+    setDaySchedules((prev) => ({
+      ...prev,
+      [selectedDay]: {
+        ...currentDayData,
+        stretches: [...(currentDayData.stretches || []), newStretch],
+      },
+    }));
+    showToast(`Added stretch "${newStretch.name}" to ${DAY_NAMES[selectedDay - 1]}`);
+    setSearchStretchResult(null);
+    setSearchQuery('');
+  };
+
+  // Direct Custom Workout Addition (No search required)
+  const handleAddDirectCustomWorkout = () => {
+    if (!customWorkoutForm.name.trim()) {
+      alert('Please enter an exercise name.');
+      return;
+    }
+    const newWorkout = {
+      id: `ex-custom-${Date.now()}`,
+      exercise_name: customWorkoutForm.name.trim(),
+      target_sets: customWorkoutForm.target_sets || 3,
+      target_reps: customWorkoutForm.target_reps || '10-12 reps',
+      rest_seconds: customWorkoutForm.rest_seconds || 60,
+      coach_notes: customWorkoutForm.coach_notes || 'Execute with controlled tempo and strict form.',
+      primary_muscles: customWorkoutForm.primary_muscles || ['chest'],
+      secondary_muscles: customWorkoutForm.secondary_muscles || [],
+      imageUrl: customWorkoutForm.imageUrl || '',
+    };
+    setDaySchedules((prev) => ({
+      ...prev,
+      [selectedDay]: {
+        ...currentDayData,
+        workouts: [...(currentDayData.workouts || []), newWorkout],
+      },
+    }));
+    showToast(`Added "${newWorkout.exercise_name}" to ${DAY_NAMES[selectedDay - 1]}`);
+    setCustomWorkoutForm({
+      name: '',
+      target_sets: 3,
+      target_reps: '10-12 reps',
+      rest_seconds: 60,
+      coach_notes: '',
+      primary_muscles: ['chest'],
+      secondary_muscles: [],
+      imageUrl: '',
+    });
+  };
+
+  const handleToggleCustomMuscle = (muscle, type = 'primary') => {
+    const isPrimary = type === 'primary';
+    const currentList = isPrimary ? customWorkoutForm.primary_muscles : customWorkoutForm.secondary_muscles;
+    const otherList = isPrimary ? customWorkoutForm.secondary_muscles : customWorkoutForm.primary_muscles;
+
+    let updatedCurrent;
+    if (currentList.includes(muscle)) {
+      updatedCurrent = currentList.filter((m) => m !== muscle);
+    } else {
+      updatedCurrent = [...currentList, muscle];
+    }
+    const updatedOther = otherList.filter((m) => m !== muscle);
+
+    setCustomWorkoutForm({
+      ...customWorkoutForm,
+      primary_muscles: isPrimary ? updatedCurrent : updatedOther,
+      secondary_muscles: isPrimary ? updatedOther : updatedCurrent,
+    });
   };
 
   // Save current day to backend
@@ -1037,9 +1160,23 @@ export default function AdminDashboardPage() {
           <div className="admin-card">
             <div className="card-header-row">
               <h3>🏃 3. Cardio & Conditioning ({currentDayData.cardio?.length || 0})</h3>
-              <button type="button" className="btn-add-item" onClick={handleAddQuickCardio}>
-                + Add Cardio
-              </button>
+              <div className="card-header-actions">
+                <button
+                  type="button"
+                  className="btn-add-item btn-search-badge"
+                  onClick={() => {
+                    setAddMode('webSearch');
+                    setSearchType('cardio');
+                    setSearchQuery('');
+                  }}
+                  title="Search web via Exa for cardio conditioning drills"
+                >
+                  🔍 Search Cardio (Exa)
+                </button>
+                <button type="button" className="btn-add-item" onClick={handleAddQuickCardio}>
+                  + Add Cardio
+                </button>
+              </div>
             </div>
 
             <div className="items-edit-list">
@@ -1104,9 +1241,23 @@ export default function AdminDashboardPage() {
           <div className="admin-card">
             <div className="card-header-row">
               <h3>🧘 4. Post-Workout Stretches ({currentDayData.stretches?.length || 0})</h3>
-              <button type="button" className="btn-add-item" onClick={handleAddQuickStretch}>
-                + Add Stretch
-              </button>
+              <div className="card-header-actions">
+                <button
+                  type="button"
+                  className="btn-add-item btn-search-badge"
+                  onClick={() => {
+                    setAddMode('webSearch');
+                    setSearchType('stretch');
+                    setSearchQuery('');
+                  }}
+                  title="Search web via Exa for stretches and mobility routines"
+                >
+                  🔍 Search Stretches (Exa)
+                </button>
+                <button type="button" className="btn-add-item" onClick={handleAddQuickStretch}>
+                  + Add Stretch
+                </button>
+              </div>
             </div>
 
             <div className="items-edit-list">
@@ -1207,7 +1358,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-card add-workout-panel">
-            <h3 className="sidebar-title">➕ Add Workout to Today</h3>
+            <h3 className="sidebar-title">➕ Add to Today&apos;s Protocol</h3>
 
             {/* Mode Switcher */}
             <div className="add-mode-toggle">
@@ -1216,14 +1367,21 @@ export default function AdminDashboardPage() {
                 className={`mode-btn ${addMode === 'standard' ? 'active' : ''}`}
                 onClick={() => setAddMode('standard')}
               >
-                Standard Dropdown
+                Standard
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${addMode === 'custom' ? 'active' : ''}`}
+                onClick={() => setAddMode('custom')}
+              >
+                ✏️ Custom
               </button>
               <button
                 type="button"
                 className={`mode-btn ${addMode === 'webSearch' ? 'active' : ''}`}
                 onClick={() => setAddMode('webSearch')}
               >
-                🌐 Web Search (Exa)
+                🌐 Web Search
               </button>
             </div>
 
@@ -1277,11 +1435,155 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            {/* Mode 2: Web Search for New Workout (Exa) */}
+            {/* Mode 2: Direct Custom Exercise (No search required) */}
+            {addMode === 'custom' && (
+              <div className="custom-direct-panel">
+                <p className="search-instruction">
+                  Type any exercise name directly without searching. Perfect for unique gym variations or specialty equipment.
+                </p>
+
+                <div className="field-group mb-2">
+                  <label className="field-label">Exercise Name *:</label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    value={customWorkoutForm.name}
+                    onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, name: e.target.value })}
+                    placeholder="e.g. Landmine Hack Squat, Ring Dips..."
+                    required
+                  />
+                </div>
+
+                <div className="custom-input-grid mb-2">
+                  <div className="grid-cell">
+                    <label className="field-label">Target Sets:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      className="admin-input-sm"
+                      value={customWorkoutForm.target_sets}
+                      onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, target_sets: parseInt(e.target.value) || 3 })}
+                    />
+                  </div>
+                  <div className="grid-cell">
+                    <label className="field-label">Target Reps:</label>
+                    <input
+                      type="text"
+                      className="admin-input-sm"
+                      value={customWorkoutForm.target_reps}
+                      onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, target_reps: e.target.value })}
+                      placeholder="e.g. 8-10 reps"
+                    />
+                  </div>
+                  <div className="grid-cell">
+                    <label className="field-label">Rest (sec):</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="15"
+                      className="admin-input-sm"
+                      value={customWorkoutForm.rest_seconds}
+                      onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, rest_seconds: parseInt(e.target.value) || 60 })}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-group mb-2">
+                  <label className="field-label">Form Cues / Coach Notes:</label>
+                  <textarea
+                    rows="2"
+                    className="admin-textarea"
+                    value={customWorkoutForm.coach_notes}
+                    onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, coach_notes: e.target.value })}
+                    placeholder="Execution tips, tempo, range of motion cues..."
+                  />
+                </div>
+
+                <div className="field-group mb-2">
+                  <label className="field-label">Optional Image / Diagram URL:</label>
+                  <input
+                    type="text"
+                    className="admin-input-sm"
+                    value={customWorkoutForm.imageUrl}
+                    onChange={(e) => setCustomWorkoutForm({ ...customWorkoutForm, imageUrl: e.target.value })}
+                    placeholder="https://... or /images/exercises/..."
+                  />
+                </div>
+
+                {/* Target Muscle Selector */}
+                <div className="muscle-customizer mb-2">
+                  <span className="customizer-label">Tap to select targeted muscles:</span>
+                  <div className="muscle-toggle-chips">
+                    {ALL_MUSCLE_KEYS.slice(0, 16).map((m) => {
+                      const isPrimary = customWorkoutForm.primary_muscles?.includes(m);
+                      const isSecondary = customWorkoutForm.secondary_muscles?.includes(m);
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`muscle-tag-chip ${isPrimary ? 'primary-active' : isSecondary ? 'secondary-active' : ''}`}
+                          onClick={() => handleToggleCustomMuscle(m, isPrimary ? 'secondary' : 'primary')}
+                        >
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Infographic preview */}
+                <div className="search-infographic-preview mb-2">
+                  <HumanBodyInfographic
+                    primaryMuscles={customWorkoutForm.primary_muscles}
+                    secondaryMuscles={customWorkoutForm.secondary_muscles}
+                    imageUrl={customWorkoutForm.imageUrl}
+                    compact={true}
+                    showToggle={false}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-add-to-day"
+                  onClick={handleAddDirectCustomWorkout}
+                >
+                  ➕ Add to {DAY_NAMES[selectedDay - 1]} Directly
+                </button>
+              </div>
+            )}
+
+            {/* Mode 3: Web Search for Workouts, Cardio & Stretches (Exa) */}
             {addMode === 'webSearch' && (
               <div className="web-search-panel">
+                <div className="search-type-pills mb-2">
+                  <button
+                    type="button"
+                    className={`search-type-pill ${searchType === 'workout' ? 'active' : ''}`}
+                    onClick={() => { setSearchType('workout'); setSearchResult(null); setSearchCardioResult(null); setSearchStretchResult(null); }}
+                  >
+                    🏋️ Workouts
+                  </button>
+                  <button
+                    type="button"
+                    className={`search-type-pill ${searchType === 'cardio' ? 'active' : ''}`}
+                    onClick={() => { setSearchType('cardio'); setSearchResult(null); setSearchCardioResult(null); setSearchStretchResult(null); }}
+                  >
+                    🏃 Cardio
+                  </button>
+                  <button
+                    type="button"
+                    className={`search-type-pill ${searchType === 'stretch' ? 'active' : ''}`}
+                    onClick={() => { setSearchType('stretch'); setSearchResult(null); setSearchCardioResult(null); setSearchStretchResult(null); }}
+                  >
+                    🧘 Stretches
+                  </button>
+                </div>
+
                 <p className="search-instruction">
-                  Search web via Exa for any lift (e.g. <em>Single-Arm Lat Pulldown, Arnold Press</em>). It extracts muscle recruitment and diagrams automatically.
+                  {searchType === 'workout' && 'Search web via Exa for any lift or exercise. Automatically extracts biomechanics and active muscles.'}
+                  {searchType === 'cardio' && 'Search web via Exa for conditioning drills (e.g. Assault Bike HIIT, 12-3-30 Treadmill, Sled Push).'}
+                  {searchType === 'stretch' && 'Search web via Exa for mobility and stretches (e.g. Couch Stretch, Pigeon Pose, 90/90 Hip Flow).'}
                 </p>
 
                 <form onSubmit={handleWebSearch} className="search-form">
@@ -1290,17 +1592,24 @@ export default function AdminDashboardPage() {
                     className="admin-input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="e.g. Single-Arm Lat Pulldown, Sissy Squat..."
+                    placeholder={
+                      searchType === 'workout'
+                        ? 'e.g. Single-Arm Lat Pulldown, Sissy Squat...'
+                        : searchType === 'cardio'
+                        ? 'e.g. Assault Bike Sprint Intervals, Rowing Tabata...'
+                        : 'e.g. Couch Stretch, Pigeon Pose, World Greatest Stretch...'
+                    }
                     required
                   />
                   <button type="submit" className="btn-search" disabled={isSearching}>
-                    {isSearching ? 'Searching Exa...' : '🔍 Search Web via Exa'}
+                    {isSearching ? 'Searching Exa...' : `🔍 Search ${searchType.charAt(0).toUpperCase() + searchType.slice(1)}`}
                   </button>
                 </form>
 
                 {searchError && <div className="search-error-msg">{searchError}</div>}
 
-                {searchResult && (
+                {/* Workout Result */}
+                {searchType === 'workout' && searchResult && (
                   <div className="search-result-card">
                     <div className="result-header">
                       <h4>{searchResult.name}</h4>
@@ -1358,6 +1667,57 @@ export default function AdminDashboardPage() {
                       onClick={handleAddSearchResultToDay}
                     >
                       ✓ Add Custom Exercise to Routine
+                    </button>
+                  </div>
+                )}
+
+                {/* Cardio Result */}
+                {searchType === 'cardio' && searchCardioResult && (
+                  <div className="search-result-card">
+                    <div className="result-header">
+                      <h4>🏃 {searchCardioResult.name}</h4>
+                      <span className="source-tag">Source: {searchCardioResult.source}</span>
+                    </div>
+
+                    <div className="cardio-result-meta mb-2">
+                      <div><strong>Equipment:</strong> {searchCardioResult.equipment}</div>
+                      <div><strong>Duration:</strong> {searchCardioResult.duration_minutes} minutes</div>
+                      <div><strong>Intensity:</strong> {searchCardioResult.target_intensity}</div>
+                    </div>
+
+                    <p className="result-notes">{searchCardioResult.coach_notes}</p>
+
+                    <button
+                      type="button"
+                      className="btn-add-to-day"
+                      onClick={handleAddSearchCardioToDay}
+                    >
+                      ✓ Add Cardio to {DAY_NAMES[selectedDay - 1]}
+                    </button>
+                  </div>
+                )}
+
+                {/* Stretch Result */}
+                {searchType === 'stretch' && searchStretchResult && (
+                  <div className="search-result-card">
+                    <div className="result-header">
+                      <h4>🧘 {searchStretchResult.name}</h4>
+                      <span className="source-tag">Source: {searchStretchResult.source}</span>
+                    </div>
+
+                    <div className="cardio-result-meta mb-2">
+                      <div><strong>Target Duration:</strong> {searchStretchResult.target_duration}</div>
+                      <div><strong>Muscles:</strong> {(searchStretchResult.muscles || []).join(', ')}</div>
+                    </div>
+
+                    <p className="result-notes">{searchStretchResult.coach_notes}</p>
+
+                    <button
+                      type="button"
+                      className="btn-add-to-day"
+                      onClick={handleAddSearchStretchToDay}
+                    >
+                      ✓ Add Stretch to {DAY_NAMES[selectedDay - 1]}
                     </button>
                   </div>
                 )}
@@ -1800,6 +2160,25 @@ export default function AdminDashboardPage() {
           gap: 0.5rem;
         }
 
+        .card-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .btn-search-badge {
+          background: rgba(59, 130, 246, 0.15) !important;
+          border-color: rgba(59, 130, 246, 0.35) !important;
+          color: #93c5fd !important;
+          transition: all 0.15s ease;
+        }
+
+        .btn-search-badge:hover {
+          background: #2563eb !important;
+          color: #ffffff !important;
+        }
+
         .card-header-row h3 {
           margin: 0;
           font-size: 1.1rem;
@@ -2217,6 +2596,59 @@ export default function AdminDashboardPage() {
 
         .btn-add-to-day:hover {
           background: #059669;
+        }
+
+        .custom-direct-panel {
+          margin-top: 0.5rem;
+        }
+
+        .custom-input-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+        }
+
+        .search-type-pills {
+          display: flex;
+          background: #111827;
+          border-radius: 8px;
+          padding: 0.2rem;
+          gap: 0.25rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .search-type-pill {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 0.35rem 0.25rem;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.25rem;
+        }
+
+        .search-type-pill.active {
+          background: #3b82f6;
+          color: #ffffff;
+        }
+
+        .cardio-result-meta {
+          background: rgba(0, 0, 0, 0.25);
+          padding: 0.6rem;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          color: #cbd5e1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          line-height: 1.4;
         }
 
         .search-instruction {
