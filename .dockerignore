@@ -1,0 +1,6 @@
+node_modules
+.next
+.git
+.deploy_keys
+test
+*.log

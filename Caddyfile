@@ -1,0 +1,4 @@
+# Listen on all network interfaces on port 80 (HTTP) since there is no domain
+:80 {
+    reverse_proxy app:3000
+}
